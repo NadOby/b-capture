@@ -2,16 +2,21 @@ import cv2
 import threading
 import os
 from datetime import datetime
+from PyQt6.QtCore import pyqtSignal, QObject
+from PyQt6.QtGui import QImage, QPixmap
 from config import load_config
 
-class VideoStream:
+class VideoStream(QObject):
+    new_frame_signal = pyqtSignal(QImage)  # Signal to send new frames
+
     def __init__(self, device_index=0):
-        self.device_index = device_index  # Default V4L2 device
+        super().__init__()
+        self.device_index = device_index
         self.cap = None
         self.recording = False
         self.video_writer = None
         self.output_path = None
-        self.fps = 30  # Set a default FPS
+        self.fps = 30  # Default FPS
 
     def start_capture(self):
         """Starts video capture and recording."""
@@ -54,6 +59,15 @@ class VideoStream:
                 break  # Stop if no frame is read
 
             self.video_writer.write(frame)  # Save frame
+
+            # Convert frame to QImage
+            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # Convert to RGB format
+            h, w, ch = rgb_frame.shape
+            bytes_per_line = ch * w
+            qt_image = QImage(rgb_frame.data, w, h, bytes_per_line, QImage.Format.Format_RGB888)
+
+            # Emit the signal with the frame
+            self.new_frame_signal.emit(qt_image)
 
         self.stop_capture()
 

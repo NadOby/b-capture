@@ -1,20 +1,19 @@
 import sys
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QLabel, QMenuBar, QMenu
+from PyQt6.QtGui import QImage, QPixmap
 from PyQt6.QtCore import Qt
-from settings import SettingsWindow  # Import the settings window
-from video_stream import VideoStream
+from video_stream import VideoStream  # Import VideoStream
 
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
-        
         self.setWindowTitle("V4L Video Recorder")
         self.setGeometry(100, 100, 800, 600)
 
         # Layout
         layout = QVBoxLayout()
 
-        # Video Display (Placeholder)
+        # Video Display (Now connected to VideoStream)
         self.video_label = QLabel("Video Stream Placeholder", self)
         self.video_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.video_label.setStyleSheet("background-color: black; color: white; font-size: 16px;")
@@ -41,11 +40,19 @@ class MainWindow(QWidget):
 
         layout.setMenuBar(self.menu_bar)
         self.setLayout(layout)
-        
-        self.video_stream = VideoStream()
 
+        # Initialize Video Stream
+        self.video_stream = VideoStream()
+        self.video_stream.new_frame_signal.connect(self.update_video)
+
+        # Connect buttons to actions
         self.start_button.clicked.connect(self.start_recording)
         self.stop_button.clicked.connect(self.stop_recording)
+
+    def update_video(self, frame: QImage):
+        """Update QLabel with new video frame."""
+        pixmap = QPixmap.fromImage(frame)
+        self.video_label.setPixmap(pixmap.scaled(self.video_label.size(), Qt.AspectRatioMode.KeepAspectRatio))
 
     def start_recording(self):
         if not self.video_stream.is_recording():
@@ -58,8 +65,7 @@ class MainWindow(QWidget):
             print("Recording stopped.")
 
     def open_settings(self):
-        self.settings_window = SettingsWindow()
-        self.settings_window.show()
+        print("Settings window would open here (to be implemented).")
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
